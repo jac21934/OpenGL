@@ -11,7 +11,12 @@ SRC = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 COBJ = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 INC= -I$(INCLUDE_DIR) -I/usr/local/include
-all: $(EXE)
+all: directories $(EXE) 
+
+directories: $(OBJ_DIR)
+
+$(OBJ_DIR):
+	mkdir $(OBJ_DIR)
 
 
 $(EXE): $(OBJ) obj/glad.o
@@ -30,7 +35,7 @@ clean:
 	$(RM) $(EXE) $(OBJ)
 
 
-.PHONY: all clean
+.PHONY: all clean directories
 
 
 
