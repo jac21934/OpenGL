@@ -16,3 +16,11 @@ std::string getFileContents(const char* filename){
 				 throw(errno);
 		 }
 }
+
+
+std::string getFileNameExtension(std::string fileName){
+
+		size_t pPos = fileName.find(".");
+		return fileName.substr(pPos, fileName.size() - 1);
+		
+}

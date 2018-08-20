@@ -3,12 +3,8 @@
 #include <fstream>
 #include <cerrno>
 #include <cmath>
-#include "uselib.h"
-#include "shader.h"
-#include "stb_image.h"
 
 
-#include "shapes.h"
 
 //OpenGL includes
 extern "C" {
@@ -19,7 +15,17 @@ extern "C" {
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
+
+//image loading
+#include "stb_image.h"
+
+//user made classes
+#include "shapes.h"
+#include "uselib.h"
+#include "shader.h"
 #include "camera.h"
+#include "texture.h"
 
 using namespace std;
 
@@ -62,9 +68,7 @@ int main(int argc, char** argv){
 
 //stbi initialization
 		stbi_set_flip_vertically_on_load(true);
-
-
-		
+	
 // Initialization
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -94,10 +98,9 @@ int main(int argc, char** argv){
 
 		
 //Shader Loading
-		Shader shader("/home/jacob/OpenGL/shader_src/vertexShaderSource","/home/jacob/OpenGL/shader_src/fragmentShaderSource" );
+		Shader shader("/home/jacob/OpenGL/shader_src/shader.vert","/home/jacob/OpenGL/shader_src/shader.frag" );
 
 		cout << "Loaded shader." << endl;
-
 
 
 		unsigned int VBO, VAO;
@@ -122,52 +125,14 @@ int main(int argc, char** argv){
 		cout << "Bound buffers." << endl;
 //textures
 
-		unsigned int texture1, texture2;
-		glGenTextures(1, &texture1);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-
-
-		int width, height, nrChannels;
-		unsigned char *data = stbi_load("./textures/container.jpg", &width, &height, &nrChannels, 0);
-		
-		if(data){
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-				glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else{
-				std::cout << "Failed to load texture" << std::endl;
-		}
-		stbi_image_free(data);
-
-		glGenTextures(1, &texture2);
-		glBindTexture(GL_TEXTURE_2D, texture2);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-		data = stbi_load("./textures/SoilCracked.jpg", &width, &height, &nrChannels, 0);
-		if(data){
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-				glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else{
-				std::cout << "Failed to load texture" << std::endl;
-		}
-		stbi_image_free(data);
-
+		Texture tex1("./textures/container.jpg", "2D");
+		Texture tex2("./textures/SoilCracked.jpg", "2D");
+				
 		cout << "Loaded textures." << endl;
-
-
 
 		//Load shaders once and then bind textures
 		shader.use();
-		shader.setInt("texture1", 0);
+		shader.setInt("tex1", 0);
 		shader.setInt("texture2", 1);
 
 		
@@ -180,9 +145,8 @@ int main(int argc, char** argv){
 
 		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f,0.0f,0.0f));
 
-		//		view = glm:: translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
 		
-		projection =  glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
+		projection =  glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
 				
 		glEnable(GL_DEPTH_TEST);		
 
@@ -205,12 +169,12 @@ int main(int argc, char** argv){
 				shader.setMat4("view", view);
 				shader.setMat4("projection", projection);
 
-				// draw stuff
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, texture1);
-				glActiveTexture(GL_TEXTURE1);
-				glBindTexture(GL_TEXTURE_2D, texture2);
 
+				// textures;
+				tex1.Bind(GL_TEXTURE0);
+				tex2.Bind(GL_TEXTURE1);
+				
+				
 				//use the shaders
 				shader.use();
 

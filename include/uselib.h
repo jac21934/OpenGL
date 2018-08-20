@@ -6,6 +6,6 @@
 #include <string>
 
 std::string getFileContents(const char* filename);
-
+std::string getFileNameExtension(std::string fileName);
 
 #endif
