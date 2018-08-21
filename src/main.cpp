@@ -1,3 +1,4 @@
+//Normal includes
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -7,18 +8,11 @@
 
 
 //OpenGL includes
-extern "C" {
 #include <glad/glad.h>
-}
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-
-
-//image loading
-#include "stb_image.h"
 
 //user made classes
 #include "shapes.h"
@@ -29,51 +23,34 @@ extern "C" {
 
 using namespace std;
 
+void windowInit(int major, int minor);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
 
 Camera camera(glm::vec3(0.0f,0.0f,3.0f));
+
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 bool firstMouse = true;
 float lastX = 800.0f/2.0;
 float lastY = 600.0f/2.0;
 float fov   = 45.0f;
  		
-
-
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 
-glm::vec3 cubePositions[] = {
-  glm::vec3( 0.0f,  0.0f,  0.0f), 
-  glm::vec3( 2.0f,  5.0f, -15.0f), 
-  glm::vec3(-1.5f, -2.2f, -2.5f),  
-  glm::vec3(-3.8f, -2.0f, -12.3f),  
-  glm::vec3( 2.4f, -0.4f, -3.5f),  
-  glm::vec3(-1.7f,  3.0f, -7.5f),  
-  glm::vec3( 1.3f, -2.0f, -2.5f),  
-  glm::vec3( 1.5f,  2.0f, -2.5f), 
-  glm::vec3( 1.5f,  0.2f, -1.5f), 
-  glm::vec3(-1.3f,  1.0f, -1.5f)  
-};
+
 
 int main(int argc, char** argv){
 
-//stbi initialization
-		stbi_set_flip_vertically_on_load(true);
-	
 // Initialization
-		glfwInit();
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+		windowInit(3,3);
 		GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Test Window", NULL, NULL);
 		if( window == NULL){
 				cout << "Failed to create GLFW window" << endl;
@@ -86,7 +63,6 @@ int main(int argc, char** argv){
 		glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 		glfwSetCursorPosCallback(window, mouse_callback);
 
-
 		//load GLAD
 		if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
@@ -95,14 +71,18 @@ int main(int argc, char** argv){
 		}
 		cout << "Initialized window." << endl;
 
-
 		
 //Shader Loading
-		Shader shader("/home/jacob/OpenGL/shader_src/shader.vert","/home/jacob/OpenGL/shader_src/shader.frag" );
+		
+		Shader lightingShader("./shader_src/lightingShader.vert", "./shader_src/lightingShader.frag");
+		lightingShader.use();
+		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		lightingShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
 
-		cout << "Loaded shader." << endl;
+		Shader lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
+		cout << "Loaded shaders." << endl;
 
-
+//Vertex Buffers to pass to shaders
 		unsigned int VBO, VAO;
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -110,92 +90,106 @@ int main(int argc, char** argv){
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeNormal), cubeNormal, GL_STATIC_DRAW);
 
-
-		
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
 		glEnableVertexAttribArray(1);
- 
-				
-		cout << "Bound buffers." << endl;
-//textures
-
-		Texture tex1("./textures/container.jpg", "2D");
-		Texture tex2("./textures/SoilCracked.jpg", "2D");
-				
-		cout << "Loaded textures." << endl;
-
-		//Load shaders once and then bind textures
-		shader.use();
-		shader.setInt("tex1", 0);
-		shader.setInt("texture2", 1);
 
 		
-// Main loop
+		// glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+		// glEnableVertexAttribArray(1);
+ 
 
+		unsigned int lightVAO;
+		glGenVertexArrays(1, &lightVAO);
+		glBindVertexArray(lightVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0); 
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+		glEnableVertexAttribArray(0); 
+
+
+		
+		cout << "Bound buffers." << endl;
+//set up matrices for transforming the objects
 		glm::mat4 model;
+		glm::mat4 lampModel;
 		glm::mat4 view;
 		glm::mat4 projection;
 
 
-		model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f,0.0f,0.0f));
-
-		
-		projection =  glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);
-				
+		projection =  glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);	
 		glEnable(GL_DEPTH_TEST);		
 
-		
+
+		glm::vec3 lightPos(1.5f, 0.0f, 0.0f);
 
 		
+// Main loop		
 		while(!glfwWindowShouldClose(window)){
 				//input
 				processInput(window);
 
 
 				//clear previous stuff
-				glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Camera stuff
+
+				lightPos = glm::vec3(1.5*cos(glfwGetTime()), 1.5*sin(glfwGetTime()), 0.0f);
+				
+				
+        // Calculate different matrices
 				view = camera.GetViewMatrix();
+				model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+				lampModel = glm::mat4();
+				lampModel = glm::translate(lampModel, lightPos);
+				lampModel = glm::scale(lampModel, glm::vec3(0.2f)); 
+
 				
-				//Give Matrics to shaders
-				shader.setMat4("view", view);
-				shader.setMat4("projection", projection);
-
-
-				// textures;
-				tex1.Bind(GL_TEXTURE0);
-				tex2.Bind(GL_TEXTURE1);
-				
-				
-				//use the shaders
-				shader.use();
-
-				glBindVertexArray(VAO);
-
-				//update models
+				//Lighting shader
+				lightingShader.use();
+				lightingShader.setMat4("view", view);
+				lightingShader.setMat4("projection", projection);
+				//update models/
 				for(int i = 0; i < 10; i++){
 						glm::mat4 model;
 						model = glm::translate(model, cubePositions[i]);
 						float angle = 20.0f * i;
 						model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 						model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-						shader.setMat4("model", model);
+						lightingShader.setMat4("model", model);
+						lightingShader.setVec3("lightPos", lightPos);
+						lightingShader.setVec3("viewPos", camera.Position);
+						glBindVertexArray(VAO);
 						glDrawArrays(GL_TRIANGLES, 0, 36);
+						
 				}
+
+
+				// lightingShader.setMat4("model", model);
+				// lightingShader.setVec3("lightPos", lightPos);
+				// lightingShader.setVec3("viewPos", camera.Position);
 				
-				float currentFrame  = glfwGetTime();
-				deltaTime = currentFrame - lastFrame;
-				lastFrame = currentFrame;
+				// glBindVertexArray(VAO);
+				// glDrawArrays(GL_TRIANGLES, 0, 36);
 
+				//Lamp shader
+				lampShader.use();
+				lampShader.setMat4("view", view);
+				lampShader.setMat4("projection", projection);
+				lampShader.setMat4("model", lampModel);
 
+				glBindVertexArray(lightVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+
+				
 				//switch old stuff with new stuff and poll keyboard events
 				glfwSwapBuffers(window);
 				glfwPollEvents();
@@ -206,6 +200,15 @@ int main(int argc, char** argv){
 		glfwTerminate();
 		return 0;
 		
+}
+
+
+
+void windowInit(int major, int minor){
+		glfwInit();
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,minor);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
 
@@ -232,6 +235,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 
 
 void processInput(GLFWwindow* window){
+		float currentFrame  = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+		
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
 				glfwSetWindowShouldClose(window, true);
 		}
@@ -246,5 +253,11 @@ void processInput(GLFWwindow* window){
 		}
 		if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
 				camera.ProcessKeyboard(RIGHT, deltaTime);
+		}
+		if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
+				camera.ProcessKeyboard(TURN_LEFT, deltaTime);
+		}
+		if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
+				camera.ProcessKeyboard(TURN_RIGHT, deltaTime);
 		}
 }

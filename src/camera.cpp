@@ -37,8 +37,28 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime){
 				Position -= Right * velocity;
 		if(direction == RIGHT)
 				Position += Right * velocity;
+		if(direction == TURN_LEFT)
+				ProcessMouseMovement(-25,0);
+		if(direction == TURN_RIGHT)
+				ProcessMouseMovement(25,0);
+		
+		
 }
 
+void Camera::TurnCamera(float xoffset, float yoffset, GLboolean constrainPitch){
+		xoffset *= MouseSensitivity;
+		yoffset *= MouseSensitivity;
+
+		Yaw   += xoffset;
+		Pitch += yoffset;
+
+		if(constrainPitch){
+				if (Pitch > 89.0f)
+						Pitch = 89.0f;
+				if (Pitch < - 89.0f)
+						Pitch = -89.0;
+		}
+}
 
 void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch){
 		xoffset *= MouseSensitivity;
@@ -55,7 +75,6 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
 		}
 
 		updateCameraVectors();
-
 }
 
 

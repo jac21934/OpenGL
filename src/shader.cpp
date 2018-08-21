@@ -13,12 +13,12 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath){
 		glShaderSource(vertexShader,1,&vertexShaderSource, NULL);
 		glCompileShader(vertexShader);
 		
-		checkCompileErrors(vertexShader, "SHADER");
+		checkCompileErrors(vertexShader, "SHADERV");
 
 		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 		glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
 		glCompileShader(fragmentShader);
-		checkCompileErrors(fragmentShader, "SHADER");
+		checkCompileErrors(fragmentShader, "SHADERF");
 
 		ID = glCreateProgram();
 		glAttachShader(ID, vertexShader);
@@ -97,7 +97,16 @@ void Shader::checkCompileErrors(unsigned int shader, std::string type){
 				
 				
 		}
-		else if (type == "SHADER"){
+		else if (type == "SHADERV"){
+				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+				if(!success){
+						glGetShaderInfoLog(shader, 1024, NULL, infoLog);
+						std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED" << std::endl
+											<< infoLog << std::endl;
+				}
+		}
+
+		else if (type == "SHADERF"){
 				glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 				if(!success){
 						glGetShaderInfoLog(shader, 1024, NULL, infoLog);
