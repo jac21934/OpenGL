@@ -71,21 +71,25 @@ int main(int argc, char** argv){
 		}
 		cout << "Initialized window." << endl;
 
-		
+
+//Textures
+
+		Texture texture("./textures/container2.png", "2D");
+		Texture specular("./textures/container2_specular.png", "2D");
+
+		cout << "Loaded textures" << endl;
 //Shader Loading
 		
 		Shader lightingShader("./shader_src/lightingShader.vert", "./shader_src/lightingShader.frag");
 		lightingShader.use();
-		lightingShader.setVec3("objectColor", 1.0f, 0.0f, 0.0f);
-
+		lightingShader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
+		lightingShader.setInt("material.diffuse", 0);
+		lightingShader.setInt("material.specular", 1);
 		Shader lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
 
 		cout << "Loaded shaders." << endl;
 
 
-//Textures
-
-		Texture texture("./textures/container2.png", "2D");
 		
 //Vertex Buffers to pass to shaders
 		unsigned int VBO, VAO;
@@ -95,17 +99,16 @@ int main(int argc, char** argv){
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeNormal), cubeNormal, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
 		glEnableVertexAttribArray(1);
-
 		
-		// glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
-		// glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+		glEnableVertexAttribArray(2);
  
 
 		unsigned int lightVAO;
@@ -114,10 +117,14 @@ int main(int argc, char** argv){
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0); 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
-		glEnableVertexAttribArray(0); 
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+		glEnableVertexAttribArray(1);
+		
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+		glEnableVertexAttribArray(2);
 
 
 		
@@ -135,6 +142,8 @@ int main(int argc, char** argv){
 
 		glm::vec3 lightPos(1.5f, 0.0f, 0.0f);
 
+
+		
 		
 // Main loop		
 		while(!glfwWindowShouldClose(window)){
@@ -143,7 +152,7 @@ int main(int argc, char** argv){
 
 
 				//clear previous stuff
-				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+				glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -165,8 +174,6 @@ int main(int argc, char** argv){
 				// lightColor.x = sin(glfwGetTime());
 				// lightColor.z = sin(glfwGetTime());
 
-				glm::vec3 ambientColor   =  glm::vec3(0.1f);
-				glm::vec3 diffuseColor   =  glm::vec3(0.7f);
 				glm::vec3 specularColor  =  glm::vec3(0.5f);
 				
 				//Lighting shader
@@ -174,22 +181,24 @@ int main(int argc, char** argv){
 				lightingShader.setMat4("view", view);
 				lightingShader.setMat4("projection", projection);
 
-				lightingShader.setVec3("material.ambient", ambientColor);
-				lightingShader.setVec3("material.diffuse", diffuseColor);
+				
 				lightingShader.setVec3("material.specular", specularColor);
-				lightingShader.setFloat("material.shininess", 32.0f);				
+				lightingShader.setFloat("material.shininess", 64.0f);				
 
 				lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 				lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 				lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
+
+				texture.Bind(GL_TEXTURE0);
+				specular.Bind(GL_TEXTURE1);
 				
 				//update models
 				for(int i = 0; i < 10; i++){
 						glm::mat4 model;
 						model = glm::translate(model, cubePositions[i]);
 						float angle = 20.0f * i;
-						model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+//						model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 						model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 						lightingShader.setMat4("model", model);
 						lightingShader.setVec3("light.position", lightPos);
