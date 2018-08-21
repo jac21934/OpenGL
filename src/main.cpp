@@ -85,6 +85,11 @@ int main(int argc, char** argv){
     lightingShader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
     lightingShader.setInt("material.diffuse", 0);
     lightingShader.setInt("material.specular", 1);
+
+		lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+		lightingShader.setFloat("light.constant", 1.0f);
+		lightingShader.setFloat("light.linear", 0.09f);
+		lightingShader.setFloat("light.quadratic", 0.032f);
     Shader lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
 
     cout << "Loaded shaders." << endl;
@@ -152,7 +157,7 @@ int main(int argc, char** argv){
 
 
         //clear previous stuff
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -188,7 +193,16 @@ int main(int argc, char** argv){
         lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
         lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
         lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+				lightingShader.setVec3("light.position", lightPos);
+				lightingShader.setVec3("light.direction",-0.2, -0.1, -0.3);
 
+
+				lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5)));
+				lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5)));
+
+				lightingShader.setVec3("viewPos", camera.Position);
+
+				
 
         texture.Bind(GL_TEXTURE0);
         specular.Bind(GL_TEXTURE1);
@@ -201,8 +215,6 @@ int main(int argc, char** argv){
 //            model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             lightingShader.setMat4("model", model);
-            lightingShader.setVec3("light.position", lightPos);
-            lightingShader.setVec3("viewPos", camera.Position);
             glBindVertexArray(VAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
             
@@ -216,7 +228,7 @@ int main(int argc, char** argv){
         // glBindVertexArray(VAO);
         // glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        //Lamp shader
+				// Lamp shader
         lampShader.use();
         lampShader.setMat4("view", view);
         lampShader.setMat4("projection", projection);
