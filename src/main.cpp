@@ -76,12 +76,17 @@ int main(int argc, char** argv){
 		
 		Shader lightingShader("./shader_src/lightingShader.vert", "./shader_src/lightingShader.frag");
 		lightingShader.use();
-		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		lightingShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
+		lightingShader.setVec3("objectColor", 1.0f, 0.0f, 0.0f);
 
 		Shader lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
+
 		cout << "Loaded shaders." << endl;
 
+
+//Textures
+
+		Texture texture("./textures/container2.png", "2D");
+		
 //Vertex Buffers to pass to shaders
 		unsigned int VBO, VAO;
 		glGenVertexArrays(1, &VAO);
@@ -142,7 +147,6 @@ int main(int argc, char** argv){
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-				lightPos = glm::vec3(1.5*cos(glfwGetTime()), 1.5*sin(glfwGetTime()), 0.0f);
 				
 				
         // Calculate different matrices
@@ -152,12 +156,35 @@ int main(int argc, char** argv){
 				lampModel = glm::translate(lampModel, lightPos);
 				lampModel = glm::scale(lampModel, glm::vec3(0.2f)); 
 
+
+				//light stuff
+				lightPos = glm::vec3(1.5*cos(glfwGetTime()), 1.5*sin(glfwGetTime()), 0.0f);
+
+				glm::vec3 lightColor;
+				// lightColor.x = 0.7 * cos(glfwGetTime());
+				// lightColor.x = sin(glfwGetTime());
+				// lightColor.z = sin(glfwGetTime());
+
+				glm::vec3 ambientColor   =  glm::vec3(0.1f);
+				glm::vec3 diffuseColor   =  glm::vec3(0.7f);
+				glm::vec3 specularColor  =  glm::vec3(0.5f);
 				
 				//Lighting shader
 				lightingShader.use();
 				lightingShader.setMat4("view", view);
 				lightingShader.setMat4("projection", projection);
-				//update models/
+
+				lightingShader.setVec3("material.ambient", ambientColor);
+				lightingShader.setVec3("material.diffuse", diffuseColor);
+				lightingShader.setVec3("material.specular", specularColor);
+				lightingShader.setFloat("material.shininess", 32.0f);				
+
+				lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+				lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+				lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+				
+				//update models
 				for(int i = 0; i < 10; i++){
 						glm::mat4 model;
 						model = glm::translate(model, cubePositions[i]);
@@ -165,7 +192,7 @@ int main(int argc, char** argv){
 						model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
 						model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 						lightingShader.setMat4("model", model);
-						lightingShader.setVec3("lightPos", lightPos);
+						lightingShader.setVec3("light.position", lightPos);
 						lightingShader.setVec3("viewPos", camera.Position);
 						glBindVertexArray(VAO);
 						glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -259,5 +286,11 @@ void processInput(GLFWwindow* window){
 		}
 		if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
 				camera.ProcessKeyboard(TURN_RIGHT, deltaTime);
+		}
+		if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+				camera.ProcessKeyboard(UP, deltaTime);
+		}
+				if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+				camera.ProcessKeyboard(DOWN, deltaTime);
 		}
 }

@@ -19,8 +19,12 @@ std::string getFileContents(const char* filename){
 
 
 std::string getFileNameExtension(std::string fileName){
-
-		size_t pPos = fileName.find(".");
-		return fileName.substr(pPos, fileName.size() - 1);
+		
+		size_t i = fileName.rfind('.', fileName.length());
+		if (i != std::string::npos) {
+				return(fileName.substr(i+1, fileName.length() - i));
+		}
+		
+		return("");
 		
 }

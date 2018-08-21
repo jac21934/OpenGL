@@ -1,7 +1,6 @@
 CXX := g++
 CXXFLAGS := -std=c++11 -Wall
 EXE = test
-LIGHTEXE = lightTest
 LDLIBS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 LDFLAGS = 
 SRC_DIR = src
@@ -32,11 +31,6 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 $(OBJ_DIR)/glad.o: $(SRC_DIR)/glad.c
 	$(CXX) $(CXXFLAGS) $(INC) -c $< -o $@	
 
-
-light: directories $(LIGHTEXE)
-
-$(LIGHTEXE):
-	$(CXX) $(CXXFLAGS) $(INC) $(LDFLAGS)  $^ $(LDLIBS) -o $@
 
 
 clean:
