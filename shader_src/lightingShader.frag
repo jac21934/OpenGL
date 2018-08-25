@@ -1,7 +1,7 @@
 #version 330 core
-
-
-
+#define NR_POINT_LIGHTS 4
+#define NR_DIFFUSE_TEXTURES 2
+#define NR_SPECULAR_TEXTURES 3
 
 struct PointLight{
 		vec3 position;
@@ -53,10 +53,19 @@ in vec3 FragPos;
 in vec3 Normal;
 
 uniform Material material;
-uniform PointLight light;
 
 uniform vec3 objectColor;
 uniform vec3 viewPos;
+
+uniform sampler2D texture_diffuse[NR_DIFFUSE_TEXTURES];
+uniform sampler2D texture_specular[NR_SPECULAR_TEXTURES];
+
+uniform DirLight dirLight;
+uniform PointLight pointLights[NR_POINT_LIGHTS];
+uniform SpotLight spotLight;
+
+
+
 
 out vec4 FragColor;
 
@@ -69,9 +78,11 @@ void main()
 
 		vec3 norm         = normalize(Normal);
 		vec3 viewDir      = normalize(viewPos - FragPos);
-		vec3 results = CalcPointLight(light, norm, FragPos, viewDir);
-		// Set the fragment color
-    FragColor = vec4(results, 1.0);
+		vec3 results = vec3(0.0, 0.0, 0.0);
+		for (int i = 0; i < NR_POINT_LIGHTS; i++){
+				results += CalcPointLight(pointLights[i], norm, FragPos, viewDir);
+		}
+				FragColor = vec4(results, 1.0);
 }
 
 
