@@ -1,6 +1,6 @@
 #version 330 core
-#define NR_POINT_LIGHTS 2
-#define NR_DIR_LIGHTS 2
+#define NR_POINT_LIGHTS 1
+#define NR_DIR_LIGHTS 1
 #define NR_DIFFUSE_TEXTURES 2
 #define NR_SPECULAR_TEXTURES 3
 
@@ -74,6 +74,16 @@ uniform SpotLight spotLight;
 
 
 
+float near = 0.1; 
+float far  = 100.0; 
+  
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
+
+
 
 out vec4 FragColor;
 
@@ -84,21 +94,47 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 void main()
 {
 		DirLight light = dirLight[0];
+
 		vec3 norm         = normalize(Normal);
 		vec3 viewDir      = normalize(viewPos - FragPos);
 		vec3 results =  vec3(0.0, 0.0, 0.0);
 
+		for(int i = 0; i < NR_DIR_LIGHTS; i++){
 
-		vec3 results1 =CalcDirLight(dirLight[0], norm, viewDir);
+				results += CalcDirLight(dirLight[i], norm, viewDir);
+		}
 
-				
-		vec3 results2 =  CalcDirLight(dirLight[1], norm, viewDir);
-
-		results = (results2 + results1);
+		for(int i = 0;  i < NR_POINT_LIGHTS; i++){
+					results += CalcPointLight(pointLight[i], norm, FragPos,viewDir);
+		}
 		
 		FragColor = vec4(results, 1.0);
 }
 
+vec3 CalcDirLight(DirLight light, vec3 norm, vec3 viewDir){
+		// Geometry calculations
+		vec3 lightDir     = normalize(-light.direction);
+		//diffuse shading
+		float diff    = max(dot(norm, lightDir), 0.0);
+		//specular shading
+		vec3 reflectDir   = reflect(-lightDir, norm);
+		float spec     = pow(max(dot(viewDir,reflectDir), 0.0), material.shininess);				
+		// Ambient Light
+		vec3 ambientDir = light.ambient * vec3(texture(material.textures_diffuse[0], TexCoords));
+
+
+		// Diffuse Light
+
+		vec3  diffuseDir = light.diffuse * diff *  vec3(texture(material.textures_diffuse[0], TexCoords));
+
+		// Specular Lighting
+
+		vec3  specularDir = light.specular * spec *  vec3(texture(material.textures_specular[0], TexCoords));
+
+		return (ambientDir + diffuseDir + specularDir);// * light.color;
+
+
+}
 
 
 vec3 CalcPointLight(PointLight light, vec3 norm, vec3 FragPos, vec3 viewDir){
@@ -133,27 +169,6 @@ vec3 CalcPointLight(PointLight light, vec3 norm, vec3 FragPos, vec3 viewDir){
 
 
 
-vec3 CalcDirLight(DirLight light, vec3 norm, vec3 viewDir){
-		// Geometry calculations
-		vec3 lightDir     = normalize(-light.direction);
-		vec3 reflectDir   = reflect(-lightDir, norm);
-				
-		// Ambient Light
-		vec3 ambientDir = light.ambient * vec3(texture(material.textures_diffuse[0], TexCoords));
-
-
-		// Diffuse Light
-		float diff    = max(dot(norm, lightDir), 0.0);
-		vec3  diffuseDir = light.diffuse * diff *  vec3(texture(material.textures_diffuse[0], TexCoords));
-
-		// Specular Lighting
-		float spec     = pow(max(dot(viewDir,reflectDir), 0.0), material.shininess);
-		vec3  specularDir = light.specular * spec *  vec3(texture(material.textures_specular[0], TexCoords));
-
-		return (ambientDir + diffuseDir + specularDir) * light.color;
-
-
-}
 vec3 CalcSpotLight(SpotLight light, vec3 norm, vec3 FragPos, vec3 viewDir){
 
 		// Geometry calculations

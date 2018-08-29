@@ -54,16 +54,19 @@ void Light::Set(std::string name, float value){
 }
 
 void Light::Set(std::string name, glm::vec3 value){
-		// if(name == "position")
-		// 		position = value;
 		if(name == "ambient")
 				ambient = value;
 		else if(name == "diffuse")
 				diffuse = value;
 		else if(name == "specular")
-				specular = value;
-		// else if(name == "color")
-		// 		color = value;
+			specular = value;
+		else if ( (name == "color") || (name == "position") || (name == "direction")){
+
+				std::cout << name + " must be initialized using a pointer." << std::endl;
+		}
+		else{
+				std::cout << "Unrecognized parameter: " + name << std::endl;
+		}
 }
 
 void Light::Set(std::string name, glm::vec3 *value){
@@ -74,6 +77,7 @@ void Light::Set(std::string name, glm::vec3 *value){
 		else if(name == "direction")
 				direction = value;
 
+		
 }
 
 

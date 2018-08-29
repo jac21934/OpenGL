@@ -44,8 +44,9 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
 		std::vector<Vertex> vertices;
 		std::vector<unsigned int> indices;
 		std::vector<Texture> textures;
-
+		float shine;
 		for(unsigned int i = 0; i < mesh->mNumVertices; i++){
+
 				Vertex vertex;
 				glm::vec3 vec;
         vec.x = mesh->mVertices[i].x;				
@@ -80,13 +81,17 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
 
 		if(mesh->mMaterialIndex >= 0){
 				aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+				//test
+				if(AI_SUCCESS != material->Get(AI_MATKEY_SHININESS, shine) ){
+						shine = 32.0;
+				}
 				std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "textures_diffuse");
 				textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 				std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "textures_specular");
 				textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 		
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, shine);
 }
 
 

@@ -4,9 +4,19 @@ Mesh::Mesh(std::vector<Vertex> Vertices, std::vector<unsigned int> Indices, std:
 		this->vertices = Vertices;
 		this->indices  = Indices;
 		this->textures = Textures;
-
+		this->shininess = 32.0f;
 		setupMesh();
 }
+
+Mesh::Mesh(std::vector<Vertex> Vertices, std::vector<unsigned int> Indices, std::vector<Texture> Textures, float shininess){
+		this->vertices = Vertices;
+		this->indices  = Indices;
+		this->textures = Textures;
+		this->shininess = shininess;
+		setupMesh();
+}
+
+
 
 void Mesh::setupMesh(){
 		glGenVertexArrays(1, &VAO);
@@ -36,6 +46,7 @@ void Mesh::setupMesh(){
 void Mesh::Draw(Shader shader){
 		unsigned int diffuseNR = 0;
 		unsigned int specularNR = 0;
+		shader.setFloat("material.shininess", shininess);
 		for(unsigned int i = 0; i < textures.size(); i++){
 				glActiveTexture(GL_TEXTURE0 + i);
 				std::string number;
