@@ -6,7 +6,6 @@
 #include <cmath>
 
 
-
 //OpenGL includes
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -19,7 +18,11 @@
 #include "uselib.h"
 #include "shader.h"
 #include "camera.h"
-#include "texture.h"
+#include "light.h"
+
+//#include "texture.h"
+#include "mesh.h"
+#include "model.h"
 
 using namespace std;
 
@@ -70,181 +73,157 @@ int main(int argc, char** argv){
         return -1;
     }
     cout << "Initialized window." << endl;
-
-
-//Textures
-
-    Texture texture("./textures/container2.png", "2D");
-    Texture specular("./textures/container2_specular.png", "2D");
-
-    cout << "Loaded textures" << endl;
-//Shader Loading
-    
-    Shader lightingShader("./shader_src/lightingShader.vert", "./shader_src/lightingShader.frag");
-    lightingShader.use();
-    lightingShader.setVec3("objectColor", 1.0f, 1.0f, 1.0f);
-    lightingShader.setInt("material.diffuse", 0);
-    lightingShader.setInt("material.specular", 1);
-
-		lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
-		lightingShader.setFloat("light.constant", 1.0f);
-		lightingShader.setFloat("light.linear", 0.09f);
-		lightingShader.setFloat("light.quadratic", 0.032f);
-    Shader lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
-
-    cout << "Loaded shaders." << endl;
-
+		glEnable(GL_DEPTH_TEST);
+		//   glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
 
     
-//Vertex Buffers to pass to shaders
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-    
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
- 
-
-    unsigned int lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-    
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-
-    
-    cout << "Bound buffers." << endl;
+    Shader  modelShader("./shader_src/modelShader.vert", "./shader_src/modelShader.frag");
+		Shader  lampShader("./shader_src/lampShader.vert", "./shader_src/lampShader.frag");
+		Shader outlineShader("./shader_src/singleColorShader.vert", "./shader_src/singleColorShader.frag");
+		
+		Model testModel(std::string("/home/jacob/OpenGL/models/nanosuit/nanosuit.obj"));
 //set up matrices for transforming the objects
-    glm::mat4 model;
-    glm::mat4 lampModel;
-    glm::mat4 view;
-    glm::mat4 projection;
 
 
-    projection =  glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);  
-    glEnable(GL_DEPTH_TEST);    
+		glm::vec3 lampPos;
+		glm::vec3 sunDir = glm::vec3(0.0f, -1.0f, 0.0f);
+		
+		glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+
+		modelShader.use();
+		modelShader.setVec3("lampColor", color);
+		
+		
+		Light dirLight("dirLight");
+		dirLight.Set("direction", &sunDir);
+		dirLight.Set("ambient", 0.2f, 0.2f, 0.2f);
+		dirLight.Set("diffuse", 0.5f, 0.5f, 0.5f);
+		dirLight.Set("specular", 1.0f, 1.0f, 1.0f);
+		dirLight.Set("color", &color);
 
 
-    glm::vec3 lightPos(1.5f, 0.0f, 0.0f);
+		Light pointLight("pointLight");
+		pointLight.Set("position", &lampPos);
+		pointLight.Set("ambient", 0.2f, 0.2f, 0.2f);
+		pointLight.Set("diffuse", 0.5f, 0.5f, 0.5f);
+		pointLight.Set("specular", 1.0f, 1.0f, 1.0f);
+		pointLight.Set("color", &color);
+
+		pointLight.Set("constant", 1.0f);
+		pointLight.Set("linear", 0.09f);
+		pointLight.Set("quadratic", 0.032f);
+		
 
 
-    
-    
-// Main loop    
     while(!glfwWindowShouldClose(window)){
+				glEnable(GL_DEPTH_TEST);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+
         //input
         processInput(window);
-
-
         //clear previous stuff
-        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+				glStencilMask(0x00);
+
+				glm::mat4 projection =  glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 100.0f);  
+				glm::mat4 view = camera.GetViewMatrix();
+				
+				
+
+				//calulate lamp position
+				lampPos = glm::vec3(0.5f*cos(glfwGetTime()),0.0f, 0.5f*sin(glfwGetTime()));
+
+				glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should update the stencil buffer
+				glStencilMask(0xFF); // 
+
+			  glm::vec3 lampColor = glm::vec3(1.0f, 1.0f, 1.0f);
+				lampShader.use();
+				lampShader.setMat4("projection", projection);
+				lampShader.setMat4("view", view);
+				lampShader.setVec3("lightColor", lampColor);
+
+				glm::mat4 lampModelMat;
+
+				lampModelMat = glm::translate(lampModelMat, lampPos);
+				lampModelMat = glm::scale(lampModelMat, glm::vec3(0.01f));
+				lampShader.setMat4("model", lampModelMat);
+				testModel.Draw(lampShader);
 
 
-        
-        
-        // Calculate different matrices
-        view = camera.GetViewMatrix();
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        lampModel = glm::mat4();
-        lampModel = glm::translate(lampModel, lightPos);
-        lampModel = glm::scale(lampModel, glm::vec3(0.2f)); 
+				
+								
 
 
-        //light stuff
-        lightPos = glm::vec3(1.5*cos(glfwGetTime()), 1.5*sin(glfwGetTime()), 0.0f);
-
-        glm::vec3 lightColor;
-        // lightColor.x = 0.7 * cos(glfwGetTime());
-        // lightColor.x = sin(glfwGetTime());
-        // lightColor.z = sin(glfwGetTime());
-
-        glm::vec3 specularColor  =  glm::vec3(0.5f);
-        
-        //Lighting shader
-        lightingShader.use();
-        lightingShader.setMat4("view", view);
-        lightingShader.setMat4("projection", projection);
-
-        
-        lightingShader.setVec3("material.specular", specularColor);
-        lightingShader.setFloat("material.shininess", 64.0f);       
-
-        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-				lightingShader.setVec3("light.position", lightPos);
-				lightingShader.setVec3("light.direction",-0.2, -0.1, -0.3);
 
 
-				lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5)));
-				lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5)));
+				//model
+				modelShader.use();
+				dirLight.Use(modelShader,0);
+				pointLight.Use(modelShader,0);
 
-				lightingShader.setVec3("viewPos", camera.Position);
+				
+				modelShader.setMat4("projection", projection);
+				modelShader.setMat4("view", view);				
+				modelShader.setVec3("viewPos", camera.Position);
+				
+				glm::mat4 model;
+				model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+				modelShader.setMat4("model", model);								
+				testModel.Draw(modelShader);
+
+				model = glm::mat4();
+				model = glm::translate(model, glm::vec3(0.0f, -1.75f, -10.0f));
+				model = glm::scale(model, glm::vec3(1.5f));
+				modelShader.setMat4("model", model);								
+				testModel.Draw(modelShader);
 
 				
 
-        texture.Bind(GL_TEXTURE0);
-        specular.Bind(GL_TEXTURE1);
-        
-        //update models
-        for(int i = 0; i < 10; i++){
-            glm::mat4 model;
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-//            model = glm::rotate(model, (float)i*(float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            lightingShader.setMat4("model", model);
-            glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            
-        }
+//stencil outlining
+				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+				glStencilMask(0x00); // disable writing to the stencil buffer
+				glDisable(GL_DEPTH_TEST);
+				outlineShader.use();
+
+				
+				model =  glm::mat4();
+				model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+				model = glm::scale(model, glm::vec3(0.2f));
+				model = glm::scale(model, glm::vec3(1.02f));
+				outlineShader.setMat4("model", model);
+				outlineShader.setMat4("view",  view);
+				outlineShader.setMat4("projection", projection);
+				testModel.Draw(outlineShader);
+
+				model = glm::mat4();
+				model = glm::translate(model, glm::vec3(0.0f, -1.75f, -10.0f));
+				model = glm::scale(model, glm::vec3(1.5f));
+				model = glm::scale(model, glm::vec3(1.02f));
+				outlineShader.setMat4("model", model);
+				outlineShader.setMat4("view",  view);
+				outlineShader.setMat4("projection", projection);
+				testModel.Draw(outlineShader);
+				
+				
+
+        glStencilMask(0xFF);
+        glEnable(GL_DEPTH_TEST);
 
 
-        // lightingShader.setMat4("model", model);
-        // lightingShader.setVec3("lightPos", lightPos);
-        // lightingShader.setVec3("viewPos", camera.Position);
-        
-        // glBindVertexArray(VAO);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
 
-				// Lamp shader
-        lampShader.use();
-        lampShader.setMat4("view", view);
-        lampShader.setMat4("projection", projection);
-        lampShader.setMat4("model", lampModel);
+				
 
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        
-        //switch old stuff with new stuff and poll keyboard events
-        glfwSwapBuffers(window);
+				
+				glfwSwapBuffers(window);
         glfwPollEvents();
     }
     
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+
     glfwTerminate();
     return 0;
     
